@@ -1,6 +1,8 @@
-# 📊 Interactive Signal Processing Explorer
+# Interactive Signal Processing Explorer
 
 **Master Digital Signal Processing through Play and Visualization**
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://dspexplorer.streamlit.app)
 
 A comprehensive Streamlit web application designed to help students, engineers, and enthusiasts explore complex DSP concepts—from the Nyquist Theorem to Image Fourier Analysis—through interactive, real-time demonstrations and gamified challenges.
 
