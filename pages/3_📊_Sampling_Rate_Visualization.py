@@ -253,7 +253,7 @@ def get_aliasing_status(sampling_ratio, aliased_count):
 
 def main():
     # Header
-    st.markdown('<h1 class="main-title">📊 Interactive Sampling & Aliasing Explorer</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title"> Interactive Sampling & Aliasing Explorer</h1>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Visualize the Nyquist-Shannon Sampling Theorem in Real-Time</p>', unsafe_allow_html=True)
     
     # Info banner
@@ -924,7 +924,13 @@ def main():
         - Window functions in FFT analysis
         - Oversampling and decimation
         - Delta-Sigma modulation
-        
+                    
+
+        * **[Nyquist–Shannon Sampling Theorem](https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem):** The core mathematical principle visualized here.
+        * **[Aliasing](https://en.wikipedia.org/wiki/Aliasing):** Detailed explanation of the "wagon wheel" effect in data.
+        * **[Anti-aliasing Filter](https://en.wikipedia.org/wiki/Anti-aliasing_filter):** How engineers prevent these artifacts in real life.
+                    
+
         **Related Theorems:**
         - Whittaker-Shannon interpolation formula
         - Kotelnikov theorem (Russian equivalent)
@@ -937,6 +943,18 @@ def main():
         - Medical imaging (CT, MRI)
         - Seismic data processing
         """)
-
+    st.markdown("---")
+    with st.expander("🧠 Test Your Knowledge"):
+        st.write("**Question:** If you have a signal with a maximum frequency of 50Hz, what is the minimum sampling rate required to avoid aliasing?")
+        
+        # Unique key is important so it doesn't conflict with other widgets
+        answer = st.radio("Select answer:", ["25 Hz", "50 Hz", "100 Hz", "200 Hz"], key="quiz_1")
+        
+        if st.button("Check Answer", key="check_1"):
+            if answer == "100 Hz":
+                st.success("Correct! The Nyquist rate is 2 × f_max (2 × 50 = 100 Hz).")
+                st.balloons()
+            else:
+                st.error("Not quite. Remember the Nyquist Theorem: f_s ≥ 2 × f_max.")
 if __name__ == "__main__":
     main()

@@ -255,7 +255,8 @@ def main():
         if current_key:
             # Generate and analyze
             t, tone, freqs = generate_dtmf_tone(current_key, duration, sample_rate)
-            
+            audio_data = (tone * 32767).astype(np.int16) 
+            st.audio(audio_data, sample_rate=sample_rate)
             if tone is not None:
                 spectrum_freqs, spectrum_magnitude = analyze_spectrum(tone, sample_rate)
                 detected_key = detect_dtmf_key(spectrum_freqs, spectrum_magnitude)

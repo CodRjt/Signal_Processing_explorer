@@ -197,7 +197,6 @@ def render_wagon_wheel_interactive():
             st.markdown("#### 📉 Why it happens: The Aliasing Graph")
             
             # Plot Perceived RPM vs Actual RPM
-            # We simulate a range of RPMs to show the "Sawtooth" or "Folding" effect
             test_rpms = np.linspace(0, 300, 300)
             perceived_rpms = []
             
@@ -227,63 +226,170 @@ def render_wagon_wheel_interactive():
             )
             st.plotly_chart(fig_alias, use_container_width=True)
             st.caption("Notice how the perceived speed rises, hits a limit (Nyquist), and then plunges into negative (backward) values?")
-
 def render_human_eye_tab():
-    """The original human eye content, simplified"""
-    st.markdown("### 👁️ The Eye: A Biological Sampler")
+    """TAB 2: Biological Compression (Chroma Subsampling)"""
     
-    col1, col2 = st.columns([1, 1])
+    st.markdown("### 🧠 Biological Compression: Rods vs. Cones")
+    st.caption("Why your brain prioritizes brightness over color, and how Netflix uses this to save bandwidth.")
+
+    # --- THE CONCEPT ---
+    col_bio, col_dsp = st.columns([1, 1], gap="large")
     
-    with col1:
-        st.write("Your eye is not a video camera. It doesn't have a shutter. Instead, it uses **Persistence of Vision**.")
-        
-
-# [Image of human retina photoreceptors structure]
-
+    with col_bio:
+        st.info("##### 👁️ The Biological Hardware")
         st.markdown("""
-        **How it works:**
-        1.  **Chemical Reaction:** Photons hit the retina (rods/cones).
-        2.  **Integration Time:** The chemical reaction takes time (~10-50ms).
-        3.  **Decay:** The image "fades out" slowly, not instantly.
+        Your retina is an uneven sensor array:
+        * **120 Million Rods:** Sensitive to **Brightness (Luma)**. High definition.
+        * **6 Million Cones:** Sensitive to **Color (Chroma)**. Low definition.
         
-        This fading creates a natural "Motion Blur" that smooths out real life. Cameras often lack this, making high-speed video look choppy (stroboscopic) unless artificial blur is added.
+        **Result:** You see "Black & White" in 4K resolution, but "Color" in roughly 480p!
         """)
         
-    with col2:
-        # Simple interactive demo for Persistence
-        st.write("#### 🧪 Demo: Persistence Trail")
-        speed = st.slider("Object Speed", 1, 10, 5)
-        trail_length = st.slider("Eye Persistence (Trail Length)", 0, 20, 5)
-        
-        t = np.linspace(0, 10, 100)
-        x = np.sin(t * speed)
-        
-        fig = go.Figure()
-        # Main dot
-        fig.add_trace(go.Scatter(x=[x[-1]], y=[0], mode='markers', marker=dict(size=20, color='blue'), name="Object"))
-        
-        # Trail
-        for i in range(trail_length):
-            opacity = (trail_length - i) / trail_length
-            idx = -1 - (i*2) # spacing
-            if abs(idx) < len(x):
-                fig.add_trace(go.Scatter(
-                    x=[x[idx]], y=[0], 
-                    mode='markers', 
-                    marker=dict(size=20-i, color='blue', opacity=opacity),
-                    showlegend=False, hoverinfo='skip'
-                ))
-                
-        fig.update_layout(
-            xaxis=dict(range=[-1.5, 1.5], showgrid=False, zeroline=False, visible=False),
-            yaxis=dict(range=[-1, 1], showgrid=False, zeroline=False, visible=False),
-            height=200,
-            title="Simulated Retinal Persistence"
+        st.image(
+            "https://upload.wikimedia.org/wikipedia/commons/3/3c/Human_photoreceptor_distribution.svg",
+            caption="The Retina: Huge number of Rods (Purple) vs. few Cones (Blue/Green/Red).",
+            use_container_width=True
         )
-        st.plotly_chart(fig, use_container_width=True)
 
+    with col_dsp:
+        st.success("##### 💾 The DSP Application: Chroma Subsampling")
+        st.markdown("""
+        Since the eye is bad at seeing color detail, engineers realized we can **compress signals** by throwing away color data.
+        
+        * **YUV 4:4:4:** Full Color Detail (Raw).
+        * **YUV 4:2:0:** Quarter Color Detail (JPEG/MP4).
+        
+        This technique saves **50% of bandwidth** with almost zero perceived quality loss.
+        """)
+
+    st.markdown("---")
+
+    # --- THE INTERACTIVE LAB ---
+    st.markdown("#### 🧪 The Bandwidth Hack Experiment")
+    st.markdown("Use the sliders to lower the resolution of the **Structure (Brightness)** vs. the **Paint (Color)**. See which one breaks the image first.")
+
+    uploaded_file = st.file_uploader("📸 Upload your own photo (optional)", type=['jpg', 'png', 'jpeg'])
+    
+    img_arr = None
+    
+    # 1. Load Image (Custom or Default)
+    if uploaded_file is not None:
+        try:
+            from PIL import Image
+            original_pil = Image.open(uploaded_file).convert('RGB')
+            # Resize giant images to keep app fast
+            original_pil.thumbnail((800, 800)) 
+            img_arr = np.array(original_pil)
+        except Exception as e:
+            st.error(f"Error loading uploaded image: {e}")
+    
+    # If no upload, load default sample from Web
+    if img_arr is None:
+        try:
+            from PIL import Image
+            import requests
+            from io import BytesIO
+            
+            # High detail image to show contrast vs color
+            url = "https://upload.wikimedia.org/wikipedia/commons/c/c0/Ara_macao_qtl1.jpg" 
+            
+            # --- FIX: HEADERS ADDED HERE ---
+            # Wikipedia requires a User-Agent or it will return 403 Forbidden
+            headers = {
+                'User-Agent': 'StreamlitDSPExplorer/1.0 (Educational App; +https://streamlit.io)'
+            }
+            response = requests.get(url, headers=headers, timeout=5)
+            response.raise_for_status() # Check for HTTP errors
+            # -------------------------------
+            
+            original_pil = Image.open(BytesIO(response.content)).convert('RGB')
+            img_arr = np.array(original_pil)
+            
+        except Exception as e:
+            st.warning(f"⚠️ Could not load sample image (Connection Issue). Using fallback noise pattern.")
+            # Fallback noise pattern if internet fails
+            img_arr = np.random.randint(0, 255, (300, 300, 3), dtype=np.uint8)
+
+    # 2. Controls
+    c1, c2 = st.columns(2)
+    with c1:
+        # Added unique key='luma_slider'
+        luma_res = st.select_slider(
+            "💡 Luma (Brightness) Resolution",
+            options=[100, 50, 25, 10, 5, 2],
+            value=100,
+            format_func=lambda x: f"{x}% (Structure)",
+            key='luma_slider'
+        )
+    with c2:
+        # Added unique key='chroma_slider'
+        chroma_res = st.select_slider(
+            "🎨 Chroma (Color) Resolution",
+            options=[100, 50, 25, 10, 5, 2],
+            value=100,
+            format_func=lambda x: f"{x}% (Paint)",
+            key='chroma_slider'
+        )
+
+    # 3. Processing Logic (Naive YUV Simulation)
+    if img_arr is not None:
+        img_float = img_arr.astype(float)
+        R, G, B = img_float[:,:,0], img_float[:,:,1], img_float[:,:,2]
+        
+        # Calculate Luma
+        Y = 0.299*R + 0.587*G + 0.114*B
+        
+        # Calculate Chroma (Difference)
+        Cb = B - Y
+        Cr = R - Y
+        
+        # Downsample Function
+        def resample_channel(channel, pct):
+            if pct == 100: return channel
+            h, w = channel.shape
+            # Downsample
+            step = int(100/pct)
+            if step < 1: step = 1
+            small = channel[::step, ::step]
+            
+            # Upsample back to original size (Nearest Neighbor to show blocks)
+            # Create indexing grid
+            h_indices = np.arange(h) // step
+            w_indices = np.arange(w) // step
+            
+            # Clip indices to prevent out-of-bounds due to integer division
+            h_indices = np.clip(h_indices, 0, small.shape[0]-1)
+            w_indices = np.clip(w_indices, 0, small.shape[1]-1)
+            
+            # Broadcast to reconstruct
+            return small[h_indices[:, None], w_indices]
+
+        # Apply degradation
+        Y_mod = resample_channel(Y, luma_res)
+        Cb_mod = resample_channel(Cb, chroma_res)
+        Cr_mod = resample_channel(Cr, chroma_res)
+        
+        # Reconstruct RGB
+        R_rec = Y_mod + Cr_mod
+        B_rec = Y_mod + Cb_mod
+        G_rec = (Y_mod - 0.299*R_rec - 0.114*B_rec) / 0.587
+        
+        # Clip and Stack
+        final_img = np.stack([R_rec, G_rec, B_rec], axis=2)
+        final_img = np.clip(final_img, 0, 255).astype(np.uint8)
+
+        # 4. Display
+        st.image(final_img, caption=f"Simulation: Luma {luma_res}% | Chroma {chroma_res}%", use_container_width=True)
+        
+        # 5. Dynamic Feedback
+        if luma_res < 20:
+            st.error("⚠️ **Structure Lost:** When you lower Luma, the image becomes unrecognizable. The eye relies on edges/contrast for object recognition.")
+        elif chroma_res < 20:
+            st.success("✅ **Bandwidth Hack:** Notice how you can lower Chroma to 10% or 5% and the image still looks 'sharp'? This is because your brain fills in the color gaps!")
+        else:
+            st.info("Try lowering the **Chroma** slider all the way down. You'll be surprised how much detail remains.")
 def main():
-    st.markdown('<h1 class="main-title">👁️ Vision, Sampling & Aliasing</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title">Vision, Sampling & Aliasing</h1>', unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Why wheels go backward and movies look smooth</p>', unsafe_allow_html=True)
 
     tab1, tab2, tab3 = st.tabs(["🎡 The Wagon Wheel (Aliasing)", "👁️ The Human Eye", "📚 Theory & Diagrams"])
@@ -294,23 +400,88 @@ def main():
     with tab2:
         render_human_eye_tab()
         
+    """"""
     with tab3:
-        st.markdown("### 📚 Theoretical Concepts")
+        st.markdown("### 📚 Theoretical Concepts & Diagrams")
+        st.markdown("---")
+
+        c1, c2 = st.columns(2, gap="large")
         
-        c1, c2 = st.columns(2)
         with c1:
-            st.markdown("#### 1. Sampling Theorem")
-            st.markdown("To capture motion accurately, you must sample at least twice as fast as the motion frequency.")
-            st.latex(r"f_{sample} > 2 \cdot f_{motion}")
+            st.markdown("#### 1. The Sampling Theorem (Nyquist)")
+            st.markdown("""
+            To capture a signal (or motion) accurately, your sampling rate ($f_s$) must be at least **twice** the frequency of the signal ($f_{max}$).
+            """)
+            st.latex(r"f_{sample} > 2 \cdot f_{signal}")
             
+            st.warning("""
+            **What happens if you fail?**
+            If $f_{sample} < 2 \cdot f_{signal}$, the high-frequency signal is misinterpreted as a lower frequency. This is **Aliasing**.
+            """)
             
+            # 
+            st.image(
+                "https://upload.wikimedia.org/wikipedia/commons/f/f6/Aliasing-plot.png",
+                caption="Aliasing: The blue dots (samples) make the high-frequency red wave look like the low-frequency blue wave.",
+                use_container_width=True
+            )
+            st.caption("Notice how the blue dots (samples) on the high-frequency wave look like they form a much slower wave.")
+
         with c2:
-            st.markdown("#### 2. Stroboscopic Effect")
-            st.markdown("When the sampling rate matches the rotation speed (or a harmonic), the object appears frozen.")
+            st.markdown("#### 2. The Stroboscopic Effect")
+            st.markdown("""
+            This is aliasing applied to rotation. When a wheel rotates at frequency $R$, and you capture it at frame rate $F$:
+            """)
             
+            st.markdown("""
+            * **Sync ($R = F$):** The wheel turns exactly 360° between frames. It looks frozen.
+            * **Forward ($R < F/2$):** The wheel turns slightly (e.g., 10°). Brain connects it correctly.
+            * **Backward ($R > F$):** The wheel turns 350°. The brain thinks it moved **-10°** (backward) because it's the shorter path.
+            """)
+            
+            # 
+            st.image(
+                "https://upload.wikimedia.org/wikipedia/commons/3/3e/WagonWheelEffect.gif",
+                caption="""As the camera accelerates right, the objects first speed up sliding to the left.
+                  At the halfway point, they suddenly appear to change direction but continue accelerating left, slowing down. """,
+                use_container_width=True
+            )
+            st.caption("The brain always assumes the shortest path between two frames, causing the illusion of reverse rotation.")
+        st.markdown("---")
+        st.markdown("### 3. Spatial Aliasing (The Moiré Effect)")
+        
+        c3, c4 = st.columns([1, 1], gap="large")
+        
+        with c3:
+            st.markdown("""
+            **The Problem:**
+            Just as time aliasing happens when **motion** is too fast for your frame rate, spatial aliasing happens when a **pattern** is too fine for your sensor's resolution.
+            
+            **The Result:**
+            Ghostly, curved interference patterns appear that don't exist in the real world. This is why news anchors are told not to wear tight-striped shirts!
+            """)
+            
+            st.info("The eye has a finite number of cones. If you look at a screen door from far away, the mesh might turn into weird wavy lines.")
 
-# [Image of stroboscope light effect diagram]
-
-
+        with c4:
+            st.image(
+                "https://upload.wikimedia.org/wikipedia/commons/c/cc/Moire.gif",
+                caption="Moiré Effect:Moiré pattern created by overlapping two sets of concentric circles.",
+                use_container_width=True
+            )
+        # --- FURTHER READING SECTION ---
+        st.markdown("---")
+        st.markdown("### 📖 Further Reading (Wikipedia)")
+        
+        st.markdown("""
+        * **[Wagon-wheel effect](https://en.wikipedia.org/wiki/Wagon-wheel_effect)**: Detailed explanation of the illusion seen in movies and machinery.
+        * **[Aliasing](https://en.wikipedia.org/wiki/Aliasing)**: The general mathematical principle behind these errors.
+        * **[Human Eye](https://en.wikipedia.org/wiki/Photoreceptor_cell)**: The cells that allow us to see.
+        * **[Chroma Subsampling]](https://en.wikipedia.org/wiki/Chroma_subsampling)**: The Image and video compression technique inspired by human vision.
+        * **[Stroboscopic effect](https://en.wikipedia.org/wiki/Stroboscopic_effect)**: How flashing lights can freeze motion.
+        * **[Moiré pattern](https://en.wikipedia.org/wiki/Moir%C3%A9_pattern)**: The spatial interference patterns shown above.
+        """)
+        
+        
 if __name__ == "__main__":
     main()

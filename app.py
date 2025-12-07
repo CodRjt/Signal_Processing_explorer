@@ -342,7 +342,7 @@ def main():
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<p class="hero-subtitle">Master Digital Signal Processing Through Interactive Visualization</p>',
+        '<p class="hero-subtitle">Explore Digital Signal Processing Through Interactive Visualization</p>',
         unsafe_allow_html=True,
     )
 
@@ -396,7 +396,7 @@ def main():
         <div style="background: #071226; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.04);">
             <strong style="color: #7dd3fc;">💡 Quick Tip:</strong><br>
             <span style="color: #cbd5e1; font-size: 0.9rem;">
-            Click on any module card above  to navigate. Each module is self-contained and interactive!
+            Click on any module card in sidebar to navigate. Each module is self-contained and interactive!
             </span>
         </div>
         """,
@@ -425,7 +425,15 @@ def main():
             )
 
         st.markdown("---")
-
+        with st.expander("💡 Pro Tips & Shortcuts", expanded=True):
+            st.markdown("""
+            **⚡ Precision Control:**
+            Click on any slider and use your **Arrow Keys** (←/→) for fine-tuning values!
+            
+            **🎹 Keyboard Shortcuts:**
+            * **R**: Rerun the application
+            * **C**: Clear cache
+            """)
         st.markdown(
             """
         <div style="background: #071826; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
@@ -652,7 +660,7 @@ def main():
     <div class="quick-start">
         <div class="quick-start-title">Your Learning Journey Begins Here</div>
         <div class="quick-start-steps">
-            <div><span class="step-number">1</span> <strong>Choose a Module</strong> from the cards above or sidebar navigation</div>
+            <div><span class="step-number">1</span> <strong>Choose a Module</strong> from the cards from sidebar navigation</div>
             <div><span class="step-number">2</span> <strong>Interact with Controls</strong> using sliders, buttons, and input fields</div>
             <div><span class="step-number">3</span> <strong>Observe Real-time Changes</strong> in visualizations and metrics</div>
             <div><span class="step-number">4</span> <strong>Read Theory Sections</strong> to understand the mathematics behind the magic</div>

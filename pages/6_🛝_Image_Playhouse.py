@@ -222,7 +222,7 @@ def get_quality_rating(image):
         return "Poor", "❌", quality_score
 
 def main():
-    st.markdown('<h1 class="main-title">🔍 Image Analysis Playhouse</h1>', 
+    st.markdown('<h1 class="main-title">Image Analysis Playhouse</h1>', 
                 unsafe_allow_html=True)
     st.markdown('<p class="subtitle">Upload and analyze images with digital signal processing</p>', 
                 unsafe_allow_html=True)
@@ -425,6 +425,12 @@ def main():
                 </ol>
             </div>
             """, unsafe_allow_html=True)
-
+        st.markdown("---")
+    with st.expander("📚 Image Processing Concepts"):
+        st.markdown("""
+        * **[Digital Image Processing](https://en.wikipedia.org/wiki/Digital_image_processing):** General overview of manipulating digital images.
+        * **[Sobel Operator](https://en.wikipedia.org/wiki/Sobel_operator):** The mathematical method used here for **Edge Detection**.
+        * **[Fourier Transform in Image Processing](https://homepages.inf.ed.ac.uk/rbf/HIPR2/fourier.htm):** A deep dive into how images are composed of frequencies.
+        """)
 if __name__ == "__main__":
     main()

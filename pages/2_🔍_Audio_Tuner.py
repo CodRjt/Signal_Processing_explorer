@@ -102,7 +102,7 @@ def compute_fft(y, sample_rate):
 # --- MAIN APP ---
 
 def main():
-    st.markdown('<h1 class="main-title">🎛️ Audio DSP Workbench</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-title"> Audio DSP Workbench</h1>', unsafe_allow_html=True)
 
     # --- TOP: THE CONTROL RACK ---
     # We use a container to visually group the controls
@@ -202,6 +202,13 @@ def main():
                 st.markdown("---")
     else:
         st.info("The tape library is empty. Tweak the knobs above and click 'REC' to save your first sound.")
+    st.markdown("---")
+    with st.expander("📚 Further Reading"):
+        st.markdown("""
+        * **[Digital Signal Processing (Wikipedia)](https://en.wikipedia.org/wiki/Digital_signal_processing):** The foundation of this tool.
+        * **[White Noise vs Pink Noise](https://en.wikipedia.org/wiki/Colors_of_noise):** Learn why some static sounds harsh and others soothing.
+        * **[Fast Fourier Transform (FFT)](https://en.wikipedia.org/wiki/Fast_Fourier_transform):** The math behind the "Spectrum" view.
+        """)
 
 if __name__ == "__main__":
     main()
