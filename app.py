@@ -1,22 +1,30 @@
 import streamlit as st
 import numpy as np
 from matplotlib import use
-use('Agg')
+
+use("Agg")
 
 # Page configuration
 st.set_page_config(
     page_title="Interactive Signal Processing Explorer",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # Enhanced CSS with modern design
-st.markdown("""
+st.markdown(
+    """
 <style>
+    /* Base typography and dark app background */
+    body, .stApp {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        color: #e6eef8;
+        background-color: #0b1220;
+    }
     /* Main title with animated gradient */
     .hero-title {
-        font-size: 3.5rem;
+        font-size: 2.8rem;
         font-weight: 900;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
         -webkit-background-clip: text;
@@ -34,21 +42,21 @@ st.markdown("""
     
     .hero-subtitle {
         text-align: center;
-        color: #6b7280;
-        font-size: 1.3rem;
+        color: #cbd5e1;
+        font-size: 1.1rem;
         margin-bottom: 3rem;
         font-weight: 400;
     }
     
     /* Module cards with hover effects */
     .module-card {
-        background: white;
+        background: #0f1724;
         border-radius: 16px;
-        padding: 2rem;
-        margin: 1rem 0;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 2px solid transparent;
+        padding: 1.5rem;
+        margin: 0.75rem 0;
+        box-shadow: 0 8px 20px rgba(2,6,23,0.6);
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255,255,255,0.03);
         cursor: pointer;
         position: relative;
         overflow: hidden;
@@ -83,16 +91,16 @@ st.markdown("""
     }
     
     .module-title {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
         font-weight: 700;
-        color: #1f2937;
-        margin-bottom: 0.75rem;
+        color: #f8fafc;
+        margin-bottom: 0.5rem;
     }
     
     .module-description {
-        color: #6b7280;
+        color: #cbd5e1;
         line-height: 1.6;
-        font-size: 1rem;
+        font-size: 0.98rem;
     }
     
     .module-tags {
@@ -103,20 +111,20 @@ st.markdown("""
     }
     
     .module-tag {
-        background: linear-gradient(135deg, #667eea15, #764ba215);
-        color: #667eea;
-        padding: 4px 12px;
+        background: #142033;
+        color: #e6eef8;
+        padding: 6px 12px;
         border-radius: 12px;
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         font-weight: 600;
-        border: 1px solid #667eea30;
+        border: 1px solid rgba(255,255,255,0.04);
     }
     
     /* Feature boxes */
     .feature-box {
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        background: linear-gradient(135deg, #071226 0%, #092036 100%);
         border-left: 4px solid #3b82f6;
-        padding: 1.5rem;
+        padding: 1.25rem;
         border-radius: 12px;
         margin: 1rem 0;
     }
@@ -124,21 +132,21 @@ st.markdown("""
     .feature-title {
         font-size: 1.2rem;
         font-weight: 700;
-        color: #1e40af;
+        color: #7dd3fc;
         margin-bottom: 0.5rem;
     }
     
     .feature-text {
-        color: #1e3a8a;
+        color: #cbd5e1;
         line-height: 1.6;
     }
     
     /* Math boxes */
     .math-card {
-        background: white;
-        border: 2px solid #e5e7eb;
+        background: #071226;
+        border: 1px solid rgba(255,255,255,0.03);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         text-align: center;
         transition: all 0.3s ease;
         margin: 1rem 0;
@@ -151,7 +159,7 @@ st.markdown("""
     }
     
     .math-label {
-        color: #6b7280;
+        color: #cbd5e1;
         font-size: 0.9rem;
         font-weight: 600;
         margin-top: 0.75rem;
@@ -161,28 +169,28 @@ st.markdown("""
     
     /* Info sections */
     .info-section {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border: 2px solid #f59e0b;
+        background: linear-gradient(135deg, #071226 0%, #0b1b2b 100%);
+        border: 1px solid rgba(255,255,255,0.03);
         border-radius: 12px;
         padding: 1.5rem;
         margin: 2rem 0;
     }
     
     .info-section strong {
-        color: #92400e;
+        color: #7dd3fc;
     }
     
     .info-section ul {
-        color: #78350f;
+        color: #cbd5e1;
         margin-top: 0.5rem;
     }
     
     /* Quick start guide */
     .quick-start {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border: 2px solid #10b981;
+        background: linear-gradient(135deg, #071826 0%, #08293a 100%);
+        border: 1px solid rgba(255,255,255,0.04);
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         margin: 2rem 0;
     }
     
@@ -220,11 +228,11 @@ st.markdown("""
     }
     
     .stat-box {
-        background: white;
+        background: #071226;
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1.25rem;
         text-align: center;
-        border: 2px solid #e5e7eb;
+        border: 1px solid rgba(255,255,255,0.03);
         transition: all 0.3s ease;
     }
     
@@ -236,7 +244,7 @@ st.markdown("""
     .stat-value {
         font-size: 2.5rem;
         font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #7dd3fc 0%, #60a5fa 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
@@ -253,8 +261,8 @@ st.markdown("""
     .footer {
         margin-top: 4rem;
         padding: 2rem;
-        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-        color: #d1d5db;
+        background: linear-gradient(135deg, #0b1220 0%, #050814 100%);
+        color: #9aa6b8;
         text-align: center;
         border-radius: 12px;
     }
@@ -270,7 +278,7 @@ st.markdown("""
     .section-header {
         font-size: 2rem;
         font-weight: 700;
-        color: #1f2937;
+        color: #e6eef8;
         margin: 2rem 0 1.5rem 0;
         padding-bottom: 0.75rem;
         border-bottom: 3px solid #667eea;
@@ -291,7 +299,7 @@ st.markdown("""
     .sidebar-header {
         font-size: 1.3rem;
         font-weight: 700;
-        color: #1f2937;
+        color: #e6eef8;
         margin: 1rem 0;
         padding-bottom: 0.5rem;
         border-bottom: 2px solid #667eea;
@@ -301,38 +309,46 @@ st.markdown("""
         padding: 0.75rem;
         margin: 0.5rem 0;
         border-radius: 8px;
-        background: #f9fafb;
-        border-left: 3px solid #667eea;
+        background: #071226;
+        border-left: 3px solid #60a5fa;
         transition: all 0.2s ease;
     }
     
     .sidebar-module:hover {
-        background: #f3f4f6;
+        background: #0b1b2b;
         padding-left: 1rem;
     }
     
     .sidebar-module-title {
         font-weight: 700;
-        color: #374151;
+        color: #e6eef8;
     }
     
     .sidebar-module-desc {
         font-size: 0.85rem;
-        color: #6b7280;
+        color: #98a6b8;
         margin-top: 0.25rem;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
 
 def main():
     # Hero Section
-    st.markdown('<h1 class="hero-title">📊 Interactive Signal Processing Explorer</h1>', 
-                unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Master Digital Signal Processing Through Interactive Visualization</p>', 
-                unsafe_allow_html=True)
-    
+    st.markdown(
+        '<h1 class="hero-title"> Interactive Signal Processing Explorer</h1>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<p class="hero-subtitle">Master Digital Signal Processing Through Interactive Visualization</p>',
+        unsafe_allow_html=True,
+    )
+
     # Quick stats
-    st.markdown("""
+    st.markdown(
+        """
     <div class="stats-container">
         <div class="stat-box">
             <div class="stat-value">6</div>
@@ -351,55 +367,70 @@ def main():
             <div class="stat-label">Interactive Feedback</div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     # Welcome message
-    st.markdown("""
+    st.markdown(
+        """
     <div class="info-section">
         <strong>🎯 Welcome!</strong><br>
         This platform provides an immersive learning experience for <strong>Digital Signal Processing (DSP)</strong> 
         concepts through interactive visualizations and real-world applications. Whether you're a student, 
         educator, or professional, explore fundamental concepts at your own pace with immediate visual feedback.
     </div>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     # Sidebar content
     with st.sidebar:
-        st.markdown('<div class="sidebar-header">📚 Module Navigator</div>', unsafe_allow_html=True)
-        
-        st.markdown("""
-        <div style="background: #eff6ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 2px solid #3b82f6;">
-            <strong style="color: #1e40af;">💡 Quick Tip:</strong><br>
-            <span style="color: #1e3a8a; font-size: 0.9rem;">
-            Click on any module card below to navigate. Each module is self-contained and interactive!
+        st.markdown(
+            '<div class="sidebar-header">📚 Module Navigator</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            """
+        <div style="background: #071226; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.04);">
+            <strong style="color: #7dd3fc;">💡 Quick Tip:</strong><br>
+            <span style="color: #cbd5e1; font-size: 0.9rem;">
+            Click on any module card above  to navigate. Each module is self-contained and interactive!
             </span>
         </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         # Module quick links
         modules_info = [
             ("📞", "DTMF Checker", "Telephone tone generation & analysis"),
-            ("🔍", "Fingerprint Scanning", "Biometric signal processing"),
+            ("🔍", "Dsp workbench", "Audio signal processing"),
             ("📊", "Sampling Rate Demo", "Nyquist theorem & aliasing"),
             ("👁️", "Human Eye Sampling", "Visual perception as sampling"),
             ("🌍", "Real-life DSP", "Practical applications"),
             ("🛝", "Image Playhouse", "Image processing playground"),
         ]
-        
+
         for icon, name, desc in modules_info:
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div class="sidebar-module">
                 <div class="sidebar-module-title">{icon} {name}</div>
                 <div class="sidebar-module-desc">{desc}</div>
             </div>
-            """, unsafe_allow_html=True)
-        
+            """,
+                unsafe_allow_html=True,
+            )
+
         st.markdown("---")
-        
-        st.markdown("""
-        <div style="background: #fef3c7; padding: 1rem; border-radius: 8px; border: 2px solid #f59e0b;">
-            <strong style="color: #92400e;">🎨 Platform Features:</strong><br>
-            <span style="color: #78350f; font-size: 0.85rem;">
+
+        st.markdown(
+            """
+        <div style="background: #071826; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);">
+            <strong style="color: #7dd3fc;">🎨 Platform Features:</strong><br>
+            <span style="color: #cbd5e1; font-size: 0.85rem;">
             ✓ Real-time parameter adjustment<br>
             ✓ Interactive visualizations<br>
             ✓ Mathematical foundations<br>
@@ -407,17 +438,22 @@ def main():
             ✓ Mobile-responsive design
             </span>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     # Main content - Module cards
-    st.markdown('<div class="section-header">🚀 Explore Interactive Modules</div>', 
-                unsafe_allow_html=True)
-    
-    # Row 1 - DTMF and Fingerprint
+    st.markdown(
+        '<div class="section-header">🚀 Explore Interactive Modules</div>',
+        unsafe_allow_html=True,
+    )
+
+    # Row 1 - DTMF and Audio DSP
     col1, col2 = st.columns(2, gap="large")
-    
+
     with col1:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="module-card">
             <span class="module-icon">📞</span>
             <div class="module-title">DTMF Checker</div>
@@ -433,18 +469,21 @@ def main():
                 <span class="module-tag">Tone Generation</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     with col2:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="module-card">
             <span class="module-icon">🔍</span>
-            <div class="module-title">Fingerprint Scanning</div>
+            <div class="module-title">Audio Tuner</div>
             <div class="module-description">
                 Simulate the complete biometric signal processing pipeline from analog capture 
                 to digital enhancement. Explore analog-to-digital conversion, quantization 
                 effects, spatial sampling, and signal enhancement techniques used in modern 
-                fingerprint scanners.
+                Audio Tuners.
             </div>
             <div class="module-tags">
                 <span class="module-tag">ADC</span>
@@ -452,13 +491,16 @@ def main():
                 <span class="module-tag">Image Processing</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     # Row 2 - Sampling and Eye
     col3, col4 = st.columns(2, gap="large")
-    
+
     with col3:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="module-card">
             <span class="module-icon">📊</span>
             <div class="module-title">Sampling Rate Visualization</div>
@@ -473,10 +515,13 @@ def main():
                 <span class="module-tag">Reconstruction</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     with col4:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="module-card">
             <span class="module-icon">👁️</span>
             <div class="module-title">Human Eye Sampling</div>
@@ -492,12 +537,15 @@ def main():
                 <span class="module-tag">Temporal Sampling</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     # Row 3 - Real-life DSP (centered)
-    col5, col6 = st.columns(2 , gap="large")
+    col5, col6 = st.columns(2, gap="large")
     with col5:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="module-card">
             <span class="module-icon">🌍</span>
             <div class="module-title">Real-life DSP Applications</div>
@@ -512,10 +560,13 @@ def main():
                 <span class="module-tag">Practical DSP</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     with col6:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="module-card">
             <span class="module-icon">🛝</span>
             <div class="module-title">Image Playhouse</div>
@@ -530,12 +581,17 @@ def main():
                 <span class="module-tag">Frequency Filtering</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
     # Mathematical Foundation Section
-    st.markdown('<div class="section-header">🧮 Mathematical Foundation</div>', 
-                unsafe_allow_html=True)
-    
-    st.markdown("""
+    st.markdown(
+        '<div class="section-header">🧮 Mathematical Foundation</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
     <div class="feature-box">
         <div class="feature-title">Core DSP Concepts</div>
         <div class="feature-text">
@@ -544,45 +600,55 @@ def main():
             Understanding these will give you deep insight into how digital systems process signals.
         </div>
     </div>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     math_col1, math_col2 = st.columns(2, gap="large")
-    
+
     with math_col1:
         st.markdown('<div class="math-card">', unsafe_allow_html=True)
         st.latex(r"X[k] = \sum_{n=0}^{N-1} x[n] \cdot e^{-j2\pi kn/N}")
-        st.markdown('<div class="math-label">Discrete Fourier Transform (DFT)</div>', 
-                   unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="math-label">Discrete Fourier Transform (DFT)</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
         st.caption("Converts time-domain signals to frequency domain")
-        
+
         st.markdown('<div class="math-card">', unsafe_allow_html=True)
         st.latex(r"f_s \geq 2f_{max}")
-        st.markdown('<div class="math-label">Nyquist-Shannon Sampling Theorem</div>', 
-                   unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="math-label">Nyquist-Shannon Sampling Theorem</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
         st.caption("Minimum sampling rate to avoid information loss")
-    
+
     with math_col2:
         st.markdown('<div class="math-card">', unsafe_allow_html=True)
-        st.latex(r"x_q[n] = Q(x[n]) = \Delta \left\lfloor \frac{x[n]}{\Delta} + \frac{1}{2} \right\rfloor")
-        st.markdown('<div class="math-label">Quantization Formula</div>', 
-                   unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.latex(
+            r"x_q[n] = Q(x[n]) = \Delta \left\lfloor \frac{x[n]}{\Delta} + \frac{1}{2} \right\rfloor"
+        )
+        st.markdown(
+            '<div class="math-label">Quantization Formula</div>', unsafe_allow_html=True
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
         st.caption("Converts continuous amplitude to discrete levels")
-        
+
         st.markdown('<div class="math-card">', unsafe_allow_html=True)
         st.latex(r"X(z) = \sum_{n=0}^{\infty} x[n] \cdot z^{-n}")
-        st.markdown('<div class="math-label">Z-Transform</div>', 
-                   unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="math-label">Z-Transform</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
         st.caption("Analyzes discrete-time systems in complex domain")
-    
+
     # Getting Started Guide
-    st.markdown('<div class="section-header">🎮 Getting Started</div>', 
-                unsafe_allow_html=True)
-    
-    st.markdown("""
+    st.markdown(
+        '<div class="section-header">🎮 Getting Started</div>', unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
     <div class="quick-start">
         <div class="quick-start-title">Your Learning Journey Begins Here</div>
         <div class="quick-start-steps">
@@ -593,13 +659,16 @@ def main():
             <div><span class="step-number">5</span> <strong>Experiment Freely</strong> - there's no wrong way to explore!</div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
+
     # Feature highlights
     feature_col1, feature_col2, feature_col3 = st.columns(3)
-    
+
     with feature_col1:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="feature-box">
             <div class="feature-title">🎯 Interactive Learning</div>
             <div class="feature-text">
@@ -607,10 +676,13 @@ def main():
                 build intuition through experimentation.
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     with feature_col2:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="feature-box">
             <div class="feature-title">📈 Visual Feedback</div>
             <div class="feature-text">
@@ -618,10 +690,13 @@ def main():
                 through visualization.
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     with feature_col3:
-        st.markdown("""
+        st.markdown(
+            """
         <div class="feature-box">
             <div class="feature-title">🧠 Deep Understanding</div>
             <div class="feature-text">
@@ -629,21 +704,25 @@ def main():
                 for complete comprehension.
             </div>
         </div>
-        """, unsafe_allow_html=True)
-    
+        """,
+            unsafe_allow_html=True,
+        )
+
     # Footer
-    st.markdown("""
+    st.markdown(
+        """
     <div class="footer">
         <div class="footer-title">📊 Interactive Signal Processing Explorer</div>
         <div>Built with Streamlit, Python, NumPy, SciPy, and Plotly</div>
         <div style="margin-top: 1rem; font-size: 0.85rem;">
             Empowering learners to master Digital Signal Processing through interactive exploration
         </div>
-        <div style="margin-top: 0.5rem; color: #9ca3af;">
-            © 2024 | Open Source Educational Platform
-        </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 if __name__ == "__main__":
     main()
+

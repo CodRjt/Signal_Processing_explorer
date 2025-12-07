@@ -1,494 +1,303 @@
-
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
-import plotly.graph_objects as go
-import plotly.express as px
+import scipy.signal as signal
 from scipy.fft import fft, fftfreq
-from scipy import signal as sp_signal
-from matplotlib import use
-use('Agg')
+import plotly.graph_objects as go
+from PIL import Image
+import io
 
-st.set_page_config(page_title="Real-life DSP", page_icon="🌍", layout="wide")
+st.set_page_config(page_title="The DSP Arcade", page_icon="🕹️", layout="wide")
 
-def generate_audio_signal(duration=1.0, fs=44100, freq=440):
-    """Generate audio signal with quantization noise"""
+# --- CUSTOM CSS FOR RETRO VIBE ---
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+    
+    .main-title {
+        font-family: 'Press Start 2P', cursive;
+        color: #FF0055;
+        text-align: center;
+        text-shadow: 4px 4px #000000;
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+    }
+    .level-header {
+        font-family: 'Press Start 2P', cursive;
+        color: #00CCFF;
+        font-size: 1.2rem;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+    .arcade-box {
+        background-color: #222;
+        border: 4px solid #00CCFF;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 10px 10px 0px #000;
+        color: #fff;
+    }
+    .manual-box {
+        background-color: #333;
+        border-left: 5px solid #FF0055;
+        padding: 15px;
+        margin-top: 10px;
+        font-family: monospace;
+        font-size: 0.9rem;
+        color: #ddd;
+    }
+    .score-box {
+        background-color: #000;
+        color: #00FF00;
+        font-family: monospace;
+        padding: 10px;
+        border: 2px solid #00FF00;
+        text-align: center;
+        font-size: 1.5rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- HELPER FUNCTIONS ---
+
+def generate_lofi_beat(bpm=90, duration=4):
+    """Generates a simple synthwave-style beat."""
+    fs = 44100
     t = np.linspace(0, duration, int(fs * duration), False)
-    signal = np.sin(2 * np.pi * freq * t)
-    # Add harmonics for richer sound
-    signal += 0.3 * np.sin(2 * np.pi * 2 * freq * t)
-    signal += 0.15 * np.sin(2 * np.pi * 3 * freq * t)
-    return t, signal / np.max(np.abs(signal))  # Normalize
+    
+    # Bass (Sine wave)
+    bass_freq = 55.0
+    bass = np.sin(2 * np.pi * bass_freq * t)
+    bass += 0.5 * np.sin(2 * np.pi * (bass_freq * 2) * t) 
+    
+    # Simple melody
+    melody = np.zeros_like(t)
+    notes = [220, 261.63, 329.63, 392.00] 
+    note_len = int(fs * (60/bpm))
+    
+    for i in range(len(t)):
+        idx = (i // note_len) % 4
+        melody[i] = np.sin(2 * np.pi * notes[idx] * t[i]) * np.exp(-((i % note_len)/(note_len/4)))
 
-def quantize_audio(signal, bits):
-    """Quantize audio signal to specified bit depth"""
-    levels = 2**bits
-    quantized = np.round(signal * (levels/2)) / (levels/2)
-    quantized = np.clip(quantized, -1, 1)
-    return quantized
+    mix = (bass * 0.4) + (melody * 0.4)
+    return t, mix, fs
 
-def calculate_quantization_noise(original, quantized):
-    """Calculate quantization error/noise"""
-    return original - quantized
+def bitcrush(audio, bit_depth, sample_rate_reduction):
+    """The 'Lo-Fi' Effect: Quantization + Downsampling."""
+    # 1. Downsample
+    audio_down = audio[::sample_rate_reduction]
+    audio_down = np.repeat(audio_down, sample_rate_reduction)
+    
+    # Fix length mismatch
+    if len(audio_down) > len(audio):
+        audio_down = audio_down[:len(audio)]
+    elif len(audio_down) < len(audio):
+        audio_down = np.pad(audio_down, (0, len(audio) - len(audio_down)))
+        
+    # 2. Quantize
+    levels = 2**bit_depth
+    audio_crushed = np.round(audio_down * (levels/2)) / (levels/2)
+    
+    return audio_crushed
 
-def generate_test_image(size=256):
-    """Generate a test image with various features"""
-    x, y = np.meshgrid(np.linspace(-1, 1, size), np.linspace(-1, 1, size))
+def pixelate_image(img_array, pixel_size):
+    """Turn high-res image into pixel art."""
+    h, w, c = img_array.shape
+    small = img_array[::pixel_size, ::pixel_size]
+    pixelated = np.repeat(np.repeat(small, pixel_size, axis=0), pixel_size, axis=1)
+    return pixelated[:h, :w]
 
-    # Create gradient
-    gradient = (x + 1) / 2
-
-    # Add circular patterns
-    r = np.sqrt(x**2 + y**2)
-    circles = np.sin(10 * r) * np.exp(-r**2)
-
-    # Combine
-    image = 0.6 * gradient + 0.4 * circles
-    image = (image - image.min()) / (image.max() - image.min())
-
-    return image
-
-def downsample_image(image, factor):
-    """Downsample image by given factor"""
-    h, w = image.shape
-    new_h, new_w = h // factor, w // factor
-
-    # Simple decimation (pick every nth pixel)
-    downsampled = image[::factor, ::factor]
-
-    return downsampled
-
-def upsample_image(image, target_shape, method='nearest'):
-    """Upsample image to target shape"""
-    from scipy.ndimage import zoom
-
-    h_factor = target_shape[0] / image.shape[0]
-    w_factor = target_shape[1] / image.shape[1]
-
-    if method == 'nearest':
-        order = 0
-    elif method == 'bilinear':
-        order = 1
-    elif method == 'cubic':
-        order = 3
-
-    upsampled = zoom(image, (h_factor, w_factor), order=order)
-
-    return upsampled
-
-def apply_lowpass_filter(signal, cutoff_freq, fs, order=5):
-    """Apply lowpass filter for anti-aliasing"""
-    nyquist = fs / 2
-    normal_cutoff = cutoff_freq / nyquist
-    b, a = sp_signal.butter(order, normal_cutoff, btype='low', analog=False)
-    filtered = sp_signal.filtfilt(b, a, signal)
-    return filtered
+# --- MAIN APP ---
 
 def main():
-    st.title("🌍 Real-life DSP Applications & Demonstrations")
-
-    st.markdown("""
-    Explore practical applications of digital signal processing in everyday technology.
-    This module demonstrates audio quantization, image processing, and signal reconstruction
-    techniques used in real-world systems.
-    """)
-
-    # Tabbed interface for different applications
-    tab1, tab2, tab3 = st.tabs([
-        "🎵 Audio Quantization",
-        "🖼️ Image Processing",
-        "🔄 Signal Reconstruction"
-    ])
-
-    # TAB 1: Audio Quantization
+    st.markdown('<h1 class="main-title">🕹️ THE DSP ARCADE 🕹️</h1>', unsafe_allow_html=True)
+    st.markdown("### Learn Audio Processing by Destroying Signals")
+    
+    tab1, tab2, tab3 = st.tabs(["Level 1: The Bitcrusher", "Level 2: Pixel Art Factory", "Level 3: Ghost Signal Hunter"])
+    
+    # --- LEVEL 1: BITCRUSHER ---
     with tab1:
-        st.markdown("### 🎵 Audio Signal Quantization & Noise Analysis")
-
-        st.markdown("""
-        Digital audio requires quantization of continuous amplitude values. Lower bit depths
-        result in **quantization noise** that can be heard as distortion or "graininess."
-        """)
-
-        audio_col1, audio_col2 = st.columns([1, 2])
-
-        with audio_col1:
-            st.markdown("#### ⚙️ Audio Parameters")
-
-            # Audio parameters
-            frequency = st.slider("Audio Frequency (Hz)", 100, 2000, 440, 50)
-            sample_rate = st.selectbox("Sample Rate", [8000, 22050, 44100, 48000], index=2)
-            bit_depth = st.selectbox("Bit Depth", [4, 8, 12, 16, 24], index=3)
-
-            duration = st.slider("Signal Duration (s)", 0.1, 2.0, 0.5, 0.1)
-
-            # Quality info
-            st.markdown("#### 📊 Quality Metrics")
-            theoretical_snr = 6.02 * bit_depth + 1.76
-            st.info(f"**Theoretical SNR:** {theoretical_snr:.2f} dB")
-
-            # Common standards
+        st.markdown('<div class="level-header">LEVEL 1: MAKE IT RETRO</div>', unsafe_allow_html=True)
+        
+        # --- MANUAL / CONTEXT ---
+        with st.expander("📖 READ MANUAL: What are Bits and Samples?"):
             st.markdown("""
-            **Common Standards:**
-            - Telephone: 8-bit, 8 kHz
-            - CD Audio: 16-bit, 44.1 kHz
-            - DVD Audio: 24-bit, 48-96 kHz
-            """)
+            <div class="manual-box">
+            <strong>1. Sample Rate (Time):</strong> Imagine a movie. A smooth movie has 60 frames per second. A choppy stop-motion animation has 5 frames per second. <br>
+            <em>Downsampling</em> removes frames, making the audio sound "muffled" or "robotic."
+            <br><br>
+            <strong>2. Bit Depth (Resolution):</strong> Imagine a staircase. High bit depth means tiny steps (smooth ramp). Low bit depth means giant steps (blocky staircase). <br>
+            <em>Quantization</em> forces the smooth sound wave onto these blocky steps, adding "fizz" or "crunch."
+            </div>
+            """, unsafe_allow_html=True)
+            st.caption("Notice how 'low bit depth' turns a smooth curve into a blocky staircase.")
 
-        with audio_col2:
-            st.markdown("#### 📊 Waveform Analysis")
+        col1, col2 = st.columns([1, 1.5])
+        
+        with col1:
+            st.markdown('<div class="arcade-box">', unsafe_allow_html=True)
+            st.write("**Mission:** Make this song sound like a 1989 GameBoy track.")
+            
+            bits = st.slider("Bit Depth (Crunchiness)", 1, 16, 16, help="Lower = More fizz/noise")
+            downsample = st.slider("Sample Rate (Muffledness)", 1, 50, 1, help="Higher number = Lower quality")
+            
+            st.markdown("---")
+            st.info("💡 Tip: Try **Bits=4** and **Sample Rate=20** for pure 8-bit nostalgia.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        with col2:
+            t, clean_audio, fs = generate_lofi_beat()
+            crushed_audio = bitcrush(clean_audio, bits, downsample)
+            crushed_audio = np.clip(crushed_audio, -1.0, 1.0)
+            
+            st.markdown("#### 🎧 Output Monitor")
+            st.audio(crushed_audio, sample_rate=fs)
+            
+            fig = go.Figure()
+            limit = 500 * downsample 
+            fig.add_trace(go.Scatter(y=clean_audio[:limit], name="Smooth (Original)", line=dict(color='#555', width=1)))
+            fig.add_trace(go.Scatter(y=crushed_audio[:limit], name="Blocky (Result)", line=dict(color='#00CCFF', width=3)))
+            fig.update_layout(height=250, margin=dict(l=0,r=0,t=0,b=0), template="plotly_dark", title="Waveform Zoom")
+            st.plotly_chart(fig, use_container_width=True)
 
-            # Generate audio
-            t, signal_original = generate_audio_signal(duration, sample_rate, frequency)
-            signal_quantized = quantize_audio(signal_original, bit_depth)
-            quantization_noise = calculate_quantization_noise(signal_original, signal_quantized)
-
-            # Create visualization
-            fig_audio = go.Figure()
-
-            # Show zoomed-in portion
-            zoom_samples = min(500, len(t))
-
-            fig_audio.add_trace(go.Scatter(
-                x=t[:zoom_samples],
-                y=signal_original[:zoom_samples],
-                mode='lines',
-                name='Original (Continuous)',
-                line=dict(color='blue', width=2)
-            ))
-
-            fig_audio.add_trace(go.Scatter(
-                x=t[:zoom_samples],
-                y=signal_quantized[:zoom_samples],
-                mode='lines+markers',
-                name=f'Quantized ({bit_depth}-bit)',
-                line=dict(color='red', width=1),
-                marker=dict(size=3)
-            ))
-
-            fig_audio.update_layout(
-                title=f"Audio Waveform: {frequency} Hz at {bit_depth}-bit Quantization",
-                xaxis_title="Time (s)",
-                yaxis_title="Amplitude",
-                height=350,
-                showlegend=True
-            )
-
-            st.plotly_chart(fig_audio, use_container_width=True)
-
-            # Quantization noise analysis
-            st.markdown("#### 🔊 Quantization Noise")
-
-            fig_noise = go.Figure()
-
-            fig_noise.add_trace(go.Scatter(
-                x=t[:zoom_samples],
-                y=quantization_noise[:zoom_samples],
-                mode='lines',
-                name='Quantization Error',
-                line=dict(color='red', width=1),
-                fill='tozeroy'
-            ))
-
-            fig_noise.update_layout(
-                title="Quantization Noise (Error Signal)",
-                xaxis_title="Time (s)",
-                yaxis_title="Error Amplitude",
-                height=250
-            )
-
-            st.plotly_chart(fig_noise, use_container_width=True)
-
-            # Calculate actual SNR
-            signal_power = np.mean(signal_original**2)
-            noise_power = np.mean(quantization_noise**2)
-            if noise_power > 0:
-                actual_snr = 10 * np.log10(signal_power / noise_power)
-            else:
-                actual_snr = float('inf')
-
-            metrics_col1, metrics_col2, metrics_col3 = st.columns(3)
-
-            with metrics_col1:
-                st.metric("Actual SNR", f"{actual_snr:.2f} dB")
-
-            with metrics_col2:
-                st.metric("RMS Noise", f"{np.sqrt(noise_power):.6f}")
-
-            with metrics_col3:
-                st.metric("Peak Error", f"{np.max(np.abs(quantization_noise)):.6f}")
-
-    # TAB 2: Image Processing
+    # --- LEVEL 2: PIXEL ART FACTORY ---
     with tab2:
-        st.markdown("### 🖼️ Image Downsampling & Upsampling")
+        st.markdown('<div class="level-header">LEVEL 2: PIXEL ARTIST</div>', unsafe_allow_html=True)
+        
+        # --- MANUAL / CONTEXT ---
+        with st.expander("📖 READ MANUAL: Images are Signals too!"):
+            st.markdown("""
+            <div class="manual-box">
+            Did you know an image is just a 2D signal?<br>
+            <strong>1. Spatial Downsampling:</strong> Instead of keeping every single pixel, we pick one pixel to represent a whole group (e.g., a 10x10 block). This creates the "Mosaic" effect.<br>
+            <strong>2. Color Quantization:</strong> Instead of millions of colors, we force the image to use only a few (e.g., 4 colors). This is exactly like "Bit Depth" in audio!
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("""
-        Image resizing involves spatial sampling. Downsampling reduces resolution, while
-        upsampling attempts to recreate detail through interpolation.
-        """)
-
-        image_col1, image_col2 = st.columns([1, 2])
-
-        with image_col1:
-            st.markdown("#### ⚙️ Image Parameters")
-
-            # Image processing parameters
-            downsample_factor = st.slider("Downsample Factor", 2, 8, 4, 1)
-            interpolation_method = st.selectbox(
-                "Upsampling Method",
-                ['nearest', 'bilinear', 'cubic']
-            )
-
-            show_difference = st.checkbox("Show Difference Map", value=True)
-
-            # Info
-            st.markdown("#### 📊 Resolution Info")
-            original_size = 256
-            downsampled_size = original_size // downsample_factor
-
-            st.info(f"**Original:** {original_size}×{original_size}")
-            st.info(f"**Downsampled:** {downsampled_size}×{downsampled_size}")
-            st.info(f"**Compression:** {downsample_factor**2}x fewer pixels")
-
-        with image_col2:
-            st.markdown("#### 🖼️ Image Processing Pipeline")
-
-            # Generate test image
-            original_image = generate_test_image(original_size)
-
-            # Downsample
-            downsampled = downsample_image(original_image, downsample_factor)
-
-            # Upsample back
-            upsampled = upsample_image(downsampled, original_image.shape, interpolation_method)
-
-            # Create subplot
-            fig_image, axes = plt.subplots(1, 4, figsize=(16, 4))
-
-            images = [
-                (original_image, "Original"),
-                (downsampled, f"Downsampled ({downsample_factor}x)"),
-                (upsampled, f"Upsampled ({interpolation_method})"),
-                (np.abs(original_image - upsampled), "Difference")
-            ]
-
-            for i, (img, title) in enumerate(images):
-                if i == 3 and not show_difference:
-                    axes[i].axis('off')
-                    continue
-
-                im = axes[i].imshow(img, cmap='viridis' if i < 3 else 'hot', 
-                                   interpolation='nearest')
-                axes[i].set_title(title, fontsize=11, fontweight='bold')
-                axes[i].axis('off')
-                plt.colorbar(im, ax=axes[i], shrink=0.8)
-
-            plt.tight_layout()
-            st.pyplot(fig_image)
-
-            # Quality metrics
-            mse = np.mean((original_image - upsampled)**2)
-            psnr = 10 * np.log10(1.0 / mse) if mse > 0 else float('inf')
-            correlation = np.corrcoef(original_image.flatten(), upsampled.flatten())[0,1]
-
-            metric_col1, metric_col2, metric_col3 = st.columns(3)
-
-            with metric_col1:
-                st.metric("MSE", f"{mse:.6f}")
-
-            with metric_col2:
-                st.metric("PSNR", f"{psnr:.2f} dB")
-
-            with metric_col3:
-                st.metric("Correlation", f"{correlation:.4f}")
-
-    # TAB 3: Signal Reconstruction
-    with tab3:
-        st.markdown("### 🔄 Signal Reconstruction & Anti-Aliasing")
-
-        st.markdown("""
-        Reconstruction filters are essential for converting discrete signals back to continuous form.
-        **Anti-aliasing filters** prevent high-frequency artifacts before downsampling.
-        """)
-
-        recon_col1, recon_col2 = st.columns([1, 2])
-
-        with recon_col1:
-            st.markdown("#### ⚙️ Reconstruction Parameters")
-
-            # Parameters
-            signal_freq = st.slider("Signal Frequency (Hz)", 5, 50, 15, 5)
-            original_fs = st.slider("Original Sample Rate (Hz)", 100, 500, 200, 50)
-            target_fs = st.slider("Target Sample Rate (Hz)", 20, 150, 50, 10)
-
-            use_antialiasing = st.checkbox("Use Anti-aliasing Filter", value=True)
-
-            # Nyquist info
-            nyquist_original = original_fs / 2
-            nyquist_target = target_fs / 2
-
-            st.markdown("#### 📊 Nyquist Frequencies")
-            st.info(f"**Original:** {nyquist_original} Hz")
-            st.info(f"**Target:** {nyquist_target} Hz")
-
-            if signal_freq > nyquist_target:
-                st.warning(f"⚠️ Signal frequency ({signal_freq} Hz) > Nyquist ({nyquist_target} Hz)")
-                st.markdown("**Aliasing will occur without filtering!**")
-
-        with recon_col2:
-            st.markdown("#### 📊 Reconstruction Analysis")
-
-            # Generate high-rate signal
-            duration = 2.0
-            t_original = np.linspace(0, duration, int(original_fs * duration), False)
-            signal_original = np.sin(2 * np.pi * signal_freq * t_original)
-
-            # Apply anti-aliasing filter if enabled
-            if use_antialiasing:
-                cutoff = target_fs / 2 * 0.8  # 80% of Nyquist
-                signal_filtered = apply_lowpass_filter(signal_original, cutoff, 
-                                                      original_fs, order=6)
+        col_ctrl, col_art = st.columns([1, 2])
+        
+        with col_ctrl:
+            st.markdown('<div class="arcade-box">', unsafe_allow_html=True)
+            st.write("**Mission:** Turn a photo into a retro video game sprite.")
+            
+            pixel_size = st.slider("Pixel Block Size", 1, 30, 1, help="Combines neighboring pixels into one big block.")
+            color_bits = st.select_slider("Color Palette Size", options=[1, 2, 4, 8], value=8, help="1 bit = Black & White only. 8 bits = Full Color.")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        with col_art:
+            uploaded_file = st.file_uploader("Upload an Image", type=['jpg', 'png'])
+            
+            if uploaded_file is not None:
+                image = Image.open(uploaded_file)
             else:
-                signal_filtered = signal_original
+                # Default Gradient Pattern
+                x = np.linspace(0, 1, 256)
+                y = np.linspace(0, 1, 256)
+                X, Y = np.meshgrid(x, y)
+                img_data = (np.sin(10*X) + np.cos(10*Y)) * 255
+                img_data = (img_data - img_data.min()) / (img_data.max() - img_data.min()) * 255
+                image = Image.fromarray(np.uint8(np.stack((img_data, img_data*0.5, img_data*0.2), axis=2)))
 
-            # Downsample
-            decimation_factor = int(original_fs / target_fs)
-            signal_downsampled = signal_filtered[::decimation_factor]
-            t_downsampled = t_original[::decimation_factor]
+            img_array = np.array(image)
+            pixelated = pixelate_image(img_array, pixel_size)
+            
+            # Color Quantization
+            levels = 2**color_bits
+            pixelated = np.floor(pixelated / (256/levels)) * (256/levels)
+            pixelated = pixelated.astype(np.uint8)
+            
+            st.image(pixelated, caption=f"Result: {img_array.shape[1]//pixel_size}x{img_array.shape[0]//pixel_size} virtual pixels", use_container_width=True)
 
-            # Reconstruction
-            t_reconstructed = t_original
-            signal_reconstructed = np.interp(t_reconstructed, t_downsampled, 
-                                            signal_downsampled)
+    # --- LEVEL 3: GHOST SIGNAL HUNTER ---
+    with tab3:
+        st.markdown('<div class="level-header">LEVEL 3: GHOST SIGNAL HUNTER</div>', unsafe_allow_html=True)
+        
+        # --- MANUAL / CONTEXT ---
+        with st.expander("📖 READ MANUAL: How to find a hidden signal"):
+            st.markdown("""
+            <div class="manual-box">
+            <strong>The Problem:</strong> The "Static" you hear is White Noise. It contains <em>all</em> frequencies mixed together.<br>
+            <strong>The Solution:</strong> A <strong>Bandpass Filter</strong> acts like a narrow window. It blocks everything except a specific "slice" of sound.<br>
+            <strong>The Game:</strong> Slide the window (Frequency) until you find the hidden tone. If the window is too wide, you let too much noise in!
+            </div>
+            """, unsafe_allow_html=True)
 
-            # Visualization
-            fig_recon = go.Figure()
+            st.caption("A Bandpass filter only lets frequencies in the 'Pass Band' (the green zone) through.")
 
-            fig_recon.add_trace(go.Scatter(
-                x=t_original,
-                y=signal_original,
-                mode='lines',
-                name='Original Signal',
-                line=dict(color='blue', width=2, dash='dash'),
-                opacity=0.7
-            ))
-
-            if use_antialiasing:
-                fig_recon.add_trace(go.Scatter(
-                    x=t_original,
-                    y=signal_filtered,
-                    mode='lines',
-                    name='After Anti-aliasing',
-                    line=dict(color='green', width=2),
-                    opacity=0.8
-                ))
-
-            fig_recon.add_trace(go.Scatter(
-                x=t_downsampled,
-                y=signal_downsampled,
-                mode='markers',
-                name=f'Samples ({target_fs} Hz)',
-                marker=dict(color='red', size=8, symbol='circle')
-            ))
-
-            fig_recon.add_trace(go.Scatter(
-                x=t_reconstructed,
-                y=signal_reconstructed,
-                mode='lines',
-                name='Reconstructed Signal',
-                line=dict(color='orange', width=2, dash='dot')
-            ))
-
-            fig_recon.update_layout(
-                title="Signal Reconstruction with Anti-aliasing",
-                xaxis_title="Time (s)",
-                yaxis_title="Amplitude",
-                height=400,
-                showlegend=True
-            )
-
-            st.plotly_chart(fig_recon, use_container_width=True)
-
-            # Frequency domain
-            st.markdown("#### 🌊 Frequency Domain")
-
-            # FFT of original and reconstructed
-            from scipy.fft import fft, fftfreq
-
-            N_orig = len(signal_original)
-            freq_orig = fftfreq(N_orig, 1/original_fs)[:N_orig//2]
-            fft_orig = np.abs(fft(signal_original))[:N_orig//2] * 2/N_orig
-
-            N_recon = len(signal_reconstructed)
-            freq_recon = fftfreq(N_recon, 1/original_fs)[:N_recon//2]
-            fft_recon = np.abs(fft(signal_reconstructed))[:N_recon//2] * 2/N_recon
-
-            fig_freq = go.Figure()
-
-            fig_freq.add_trace(go.Scatter(
-                x=freq_orig,
-                y=fft_orig,
-                mode='lines',
-                name='Original Spectrum',
-                line=dict(color='blue', width=2)
-            ))
-
-            fig_freq.add_trace(go.Scatter(
-                x=freq_recon,
-                y=fft_recon,
-                mode='lines',
-                name='Reconstructed Spectrum',
-                line=dict(color='orange', width=2, dash='dash')
-            ))
-
-            # Mark Nyquist frequency
-            fig_freq.add_vline(
-                x=nyquist_target,
-                line=dict(color='red', dash='dash', width=2),
-                annotation_text=f"Nyquist: {nyquist_target} Hz"
-            )
-
-            fig_freq.update_layout(
-                title="Frequency Spectrum Comparison",
-                xaxis_title="Frequency (Hz)",
-                yaxis_title="Magnitude",
-                height=350
-            )
-
-            fig_freq.update_xaxes(range=[0, original_fs/2])
-            st.plotly_chart(fig_freq, use_container_width=True)
-
-    # Summary section
-    st.markdown("---")
-    st.markdown("### 📚 Summary of Real-World Applications")
-
-    summary_col1, summary_col2, summary_col3 = st.columns(3)
-
-    with summary_col1:
         st.markdown("""
-        **Audio Processing:**
-        - MP3/AAC compression
-        - Voice codecs
-        - Audio effects (reverb, EQ)
-        - Noise cancellation
-        """)
+        <div class="arcade-box">
+        <strong>Mission:</strong> A secret sine wave is hiding in the static. 
+        Tune the radio frequency to finding it. Watch the <strong>Green Zone</strong> in the graph!
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if 'target_freq' not in st.session_state:
+            st.session_state.target_freq = np.random.randint(200, 1000)
+            
+        col_game, col_vis = st.columns([1, 1])
+        
+        with col_game:
+            # Generate Hidden Signal
+            duration = 1.0
+            fs = 44100
+            t = np.linspace(0, duration, int(fs*duration), False)
+            target = st.session_state.target_freq
+            signal_hidden = np.sin(2 * np.pi * target * t)
+            noise = np.random.normal(0, 2, len(t))
+            raw_input = signal_hidden + noise
+            
+            # Controls
+            user_freq = st.slider("Tuner Frequency (Hz)", 100, 1200, 100)
+            bandwidth = st.slider("Focus / Precision", 10, 200, 50, help="Smaller = Less Noise, but harder to find the signal!")
+            
+            # Apply Filter
+            nyq = 0.5 * fs
+            low = (user_freq - bandwidth/2) / nyq
+            high = (user_freq + bandwidth/2) / nyq
+            if low <= 0: low = 0.001
+            if high >= 1: high = 0.999
+            
+            b, a = signal.butter(4, [low, high], btype='band')
+            filtered_signal = signal.lfilter(b, a, raw_input)
+            
+            # Scoring
+            energy = np.sum(filtered_signal**2)
+            max_possible_energy = np.sum(signal_hidden**2) * 0.8 
+            score = int((energy / max_possible_energy) * 100)
+            score = min(score, 100)
+            
+            st.markdown(f'<div class="score-box">SIGNAL STRENGTH: {score}%</div>', unsafe_allow_html=True)
+            
+            if score > 80:
+                st.balloons()
+                st.success(f"LOCKED ON! Target found at {target} Hz.")
+                if st.button("Find Next Signal"):
+                    st.session_state.target_freq = np.random.randint(200, 1000)
+                    st.rerun()
+            
+            st.markdown("#### 🎧 Audio Feed")
+            st.audio(filtered_signal / np.max(np.abs(filtered_signal)), sample_rate=fs)
 
-    with summary_col2:
-        st.markdown("""
-        **Image Processing:**
-        - JPEG compression
-        - Photo resizing
-        - Image enhancement
-        - Computer vision
-        """)
-
-    with summary_col3:
-        st.markdown("""
-        **Signal Reconstruction:**
-        - DAC (Digital-to-Analog)
-        - Video upscaling
-        - Interpolation filters
-        - Bandwidth optimization
-        """)
+        with col_vis:
+            st.markdown("**Spectral Scanner**")
+            N = len(raw_input)
+            yf = fft(raw_input)
+            xf = fftfreq(N, 1/fs)[:N//2]
+            skip = 100
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=xf[::skip], y=2.0/N * np.abs(yf[0:N//2])[::skip], 
+                                     line=dict(color='gray', width=1), name="Noise Floor"))
+            
+            # Hidden Target (Faint Red Line)
+            fig.add_vline(x=target, line_color="#FF0055", line_width=2, opacity=0.5, annotation_text="Target")
+            
+            # User Filter (Green Zone)
+            fig.add_vrect(x0=user_freq - bandwidth/2, x1=user_freq + bandwidth/2, 
+                          fillcolor="#00FF00", opacity=0.2, line_width=0, annotation_text="Your Filter")
+            
+            fig.update_layout(xaxis_title="Frequency (Hz)", yaxis_title="Amplitude", xaxis_range=[0, 1500], template="plotly_dark", height=300)
+            st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()

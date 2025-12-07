@@ -12,7 +12,7 @@ A comprehensive Streamlit web application for exploring digital signal processin
    - Time and frequency domain visualization
    - Real-time tone detection
 
-2. **🔍 Fingerprint Scanning Simulation**
+2. **🔍 Audio Tuner Simulation**
    - Biometric signal acquisition visualization
    - Analog-to-digital conversion demonstration
    - Quantization effects analysis
@@ -36,9 +36,11 @@ A comprehensive Streamlit web application for exploring digital signal processin
    - Signal reconstruction techniques
    - Anti-aliasing demonstrations
 
-6. **🛝 Image Playhouse**
-   -Upload Image
-   -Play with edges and frequencies
+  6. **🛝 Image Playhouse**
+   - Upload Image
+   - Fourier spectrum visualization
+   - Interactive frequency filtering (low-pass/high-pass)
+   - Edge detection and feature extraction  
 ## 🚀 Installation
 
 ### Prerequisites

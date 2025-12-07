@@ -8,11 +8,19 @@ from scipy import signal as sp_signal
 from matplotlib import use
 use('Agg')
 
+import textwrap
+
 st.set_page_config(page_title="Sampling Rate Visualization", page_icon="📊", layout="wide")
 
 # Enhanced CSS styling
-st.markdown("""
+st.markdown(textwrap.dedent("""
 <style>
+    /* Page-level dark theme adjustments for better contrast */
+    body, .stApp {
+        background-color: #0b1220;
+        color: #e6eef8;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
     /* Main title */
     .main-title {
         font-size: 3rem;
@@ -26,33 +34,35 @@ st.markdown("""
     
     .subtitle {
         text-align: center;
-        color: #666;
-        font-size: 1.2rem;
+        color: #cbd5e1;
+        font-size: 1.1rem;
         margin-bottom: 2rem;
     }
     
     /* Status indicators */
     .status-excellent {
-        background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
-        color: white;
+        background: linear-gradient(135deg, #08331a 0%, #0b4426 100%);
+        color: #c7f9d3;
         padding: 1rem;
         border-radius: 12px;
         text-align: center;
         font-weight: bold;
         font-size: 1.1rem;
-        box-shadow: 0 4px 12px rgba(76,175,80,0.3);
+        box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+        border: 1px solid rgba(255,255,255,0.03);
     }
     
     .status-warning {
-        background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
-        color: white;
+        background: linear-gradient(135deg, #3a2308 0%, #512f0b 100%);
+        color: #ffe8c2;
         padding: 1rem;
         border-radius: 12px;
         text-align: center;
         font-weight: bold;
         font-size: 1.1rem;
-        box-shadow: 0 4px 12px rgba(255,152,0,0.3);
+        box-shadow: 0 6px 18px rgba(2,6,23,0.6);
         animation: pulse 2s infinite;
+        border: 1px solid rgba(255,255,255,0.03);
     }
     
     @keyframes pulse {
@@ -62,13 +72,15 @@ st.markdown("""
     
     /* Metric cards */
     .metric-card {
-        background: white;
-        padding: 1.5rem;
+        background: #0f1724;
+        padding: 1.25rem;
         border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 6px 18px rgba(2,6,23,0.6);
         text-align: center;
         transition: transform 0.3s ease;
-        border-top: 4px solid #667eea;
+        border-top: 4px solid #2196f3;
+        border: 1px solid rgba(255,255,255,0.03);
+        color: #cbd5e1;
     }
     
     .metric-card:hover {
@@ -77,15 +89,16 @@ st.markdown("""
     }
     
     .metric-value {
-        font-size: 2.5rem;
-        font-weight: bold;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-size: 2rem;
+        font-weight: 800;
+        color: #e6eef8;
+        background: linear-gradient(135deg, #7dd3fc 0%, #60a5fa 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     
     .metric-label {
-        color: #666;
+        color: #9aa6b8;
         font-size: 0.9rem;
         margin-top: 0.5rem;
         text-transform: uppercase;
@@ -93,49 +106,57 @@ st.markdown("""
     }
     
     .metric-sublabel {
-        color: #999;
-        font-size: 0.75rem;
+        color: #98a6b8;
+        font-size: 0.78rem;
         margin-top: 0.3rem;
     }
     
     /* Info boxes */
     .info-box {
-        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        background: linear-gradient(135deg, #071226 0%, #092036 100%);
         padding: 1rem;
         border-radius: 10px;
         border-left: 4px solid #2196f3;
         margin: 1rem 0;
+        color: #cbd5e1;
+        border: 1px solid rgba(255,255,255,0.03);
     }
     
     .warning-box {
-        background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+        background: linear-gradient(135deg, #2b1a08 0%, #3a220b 100%);
         padding: 1rem;
         border-radius: 10px;
         border-left: 4px solid #ff9800;
         margin: 1rem 0;
+        color: #ffe8c2;
+        border: 1px solid rgba(255,255,255,0.03);
     }
     
     .success-box {
-        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        background: linear-gradient(135deg, #08331a 0%, #0b4426 100%);
         padding: 1rem;
         border-radius: 10px;
         border-left: 4px solid #4caf50;
         margin: 1rem 0;
+        color: #c7f9d3;
+        border: 1px solid rgba(255,255,255,0.03);
     }
     
     .danger-box {
-        background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+        background: linear-gradient(135deg, #3a0a0a 0%, #4b0f0f 100%);
         padding: 1rem;
         border-radius: 10px;
         border-left: 4px solid #f44336;
         margin: 1rem 0;
+        color: #ffd6d6;
+        border: 1px solid rgba(255,255,255,0.03);
     }
     
     /* Section headers */
     .section-header {
         font-size: 1.5rem;
         font-weight: 700;
-        color: #667eea;
+        color: #e6eef8;
         margin: 1.5rem 0 1rem 0;
         padding-bottom: 0.5rem;
         border-bottom: 3px solid #667eea;
@@ -145,12 +166,13 @@ st.markdown("""
     .freq-badge {
         display: inline-block;
         padding: 6px 12px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: linear-gradient(135deg, #0b2a44 0%, #14385a 100%);
+        color: #e6eef8;
         border-radius: 20px;
         font-weight: bold;
         margin: 3px;
         font-size: 0.9rem;
+        border: 1px solid rgba(255,255,255,0.03);
     }
     
     /* Preset buttons styling */
@@ -162,21 +184,22 @@ st.markdown("""
     
     /* Custom radio button styling */
     .preset-option {
-        background: white;
+        background: #071226;
         padding: 1rem;
         border-radius: 10px;
-        border: 2px solid #e0e0e0;
+        border: 1px solid rgba(255,255,255,0.03);
         margin: 0.5rem 0;
         cursor: pointer;
         transition: all 0.3s ease;
+        color: #cbd5e1;
     }
     
     .preset-option:hover {
         border-color: #667eea;
-        box-shadow: 0 4px 12px rgba(102,126,234,0.2);
+        box-shadow: 0 6px 18px rgba(2,6,23,0.6);
     }
 </style>
-""", unsafe_allow_html=True)
+"""), unsafe_allow_html=True)
 
 def generate_test_signal(t, freq1=5, freq2=15, freq3=25):
     """Generate a composite test signal with multiple frequency components"""
@@ -321,7 +344,7 @@ def main():
         nyquist_rate = 2 * max_freq
         
         # Display frequency info with badges
-        st.markdown(f"""
+        st.markdown(textwrap.dedent(f"""
         <div class="info-box">
             <strong>Signal Components:</strong><br>
             <span class="freq-badge">{freq1} Hz</span>
@@ -331,7 +354,7 @@ def main():
             <strong>Max Frequency:</strong> {max_freq} Hz<br>
             <strong>Nyquist Rate:</strong> {nyquist_rate} Hz (minimum required)
         </div>
-        """, unsafe_allow_html=True)
+        """), unsafe_allow_html=True)
         
         st.markdown("---")
         
@@ -395,12 +418,12 @@ def main():
         # Status display
         status_text, status_class, status_desc = get_aliasing_status(sampling_ratio, len(aliased_freqs))
         
-        st.markdown(f"""
+        st.markdown(textwrap.dedent(f"""
         <div class="{status_class}">
             <div style="font-size: 1.3rem;">{status_text}</div>
             <div style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">{status_desc}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """), unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -408,41 +431,41 @@ def main():
         metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
         
         with metric_col1:
-            st.markdown(f"""
+            st.markdown(textwrap.dedent(f"""
             <div class="metric-card">
                 <div class="metric-value">{sampling_rate}</div>
                 <div class="metric-label">Sampling Rate</div>
                 <div class="metric-sublabel">Hz (samples/sec)</div>
             </div>
-            """, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
         
         with metric_col2:
-            st.markdown(f"""
+            st.markdown(textwrap.dedent(f"""
             <div class="metric-card">
                 <div class="metric-value">{sampling_ratio:.2f}x</div>
                 <div class="metric-label">Nyquist Ratio</div>
                 <div class="metric-sublabel">fs / (2·fmax)</div>
             </div>
-            """, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
         
         with metric_col3:
-            st.markdown(f"""
+            st.markdown(textwrap.dedent(f"""
             <div class="metric-card">
                 <div class="metric-value">{len(t_sampled)}</div>
                 <div class="metric-label">Total Samples</div>
                 <div class="metric-sublabel">in 2 seconds</div>
             </div>
-            """, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
         
         with metric_col4:
             nyquist_freq = sampling_rate / 2
-            st.markdown(f"""
+            st.markdown(textwrap.dedent(f"""
             <div class="metric-card">
                 <div class="metric-value">{nyquist_freq:.0f}</div>
                 <div class="metric-label">Nyquist Freq</div>
                 <div class="metric-sublabel">fs / 2 (Hz)</div>
             </div>
-            """, unsafe_allow_html=True)
+            """), unsafe_allow_html=True)
         
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -522,20 +545,20 @@ def main():
             
             # Explanation
             if sampling_ratio < 1:
-                st.markdown("""
+                st.markdown(textwrap.dedent("""
                 <div class="danger-box">
                     <strong>⚠️ Aliasing Visible:</strong> Notice how the reconstructed signal (green dashed line) 
                     differs significantly from the original. High frequency components appear as lower frequencies!
                 </div>
-                """, unsafe_allow_html=True)
+                """), unsafe_allow_html=True)
             else:
-                st.markdown("""
+                st.markdown(textwrap.dedent("""
                 <div class="success-box">
                     <strong>✅ Good Reconstruction:</strong> The reconstructed signal closely matches the original. 
                     The sampling rate is sufficient to capture all frequency components.
                 </div>
-                """, unsafe_allow_html=True)
-        
+                """), unsafe_allow_html=True)
+    
         with tab2:
             st.markdown("### Frequency Spectrum Analysis")
             
@@ -605,20 +628,20 @@ def main():
             
             # Aliasing information
             if aliased_freqs:
-                st.markdown(f"""
+                st.markdown(textwrap.dedent(f"""
                 <div class="warning-box">
                     <strong>🔴 Aliased Frequencies Detected:</strong><br>
                     {"".join([f"• <strong>{orig} Hz</strong> appears as <strong>{alias:.1f} Hz</strong> (folded around Nyquist)<br>" 
                               for orig, alias in aliased_freqs])}
                 </div>
-                """, unsafe_allow_html=True)
+                """), unsafe_allow_html=True)
             else:
-                st.markdown("""
+                st.markdown(textwrap.dedent("""
                 <div class="success-box">
                     <strong>✅ No Aliasing:</strong> All frequency components are below the Nyquist frequency.
                     The spectrum is accurately represented.
                 </div>
-                """, unsafe_allow_html=True)
+                """), unsafe_allow_html=True)
         
         with tab3:
             st.markdown("### Reconstruction Quality Metrics")
@@ -710,7 +733,7 @@ def main():
                     quality_msg = "❌ Poor reconstruction. Significant information loss due to aliasing."
                     quality_class = "danger-box"
                 
-                st.markdown(f'<div class="{quality_class}"><strong>Quality Assessment:</strong> {quality_msg}</div>', 
+                st.markdown(textwrap.dedent(f'<div class="{quality_class}"><strong>Quality Assessment:</strong> {quality_msg}</div>'), 
                           unsafe_allow_html=True)
             else:
                 st.info("Enable 'Show Reconstructed Signal' to see error analysis.")
@@ -758,32 +781,32 @@ def main():
             with theory_col2:
                 st.markdown("#### Sampling Categories")
                 
-                st.markdown("""
+                st.markdown(textwrap.dedent("""
                 <div class="danger-box">
                     <strong>🔴 Undersampling:</strong> $f_s < 2f_{max}$<br>
                     • Aliasing occurs<br>
                     • Information is permanently lost<br>
                     • High frequencies fold back into low frequency range
                 </div>
-                """, unsafe_allow_html=True)
+                """), unsafe_allow_html=True)
                 
-                st.markdown("""
+                st.markdown(textwrap.dedent("""
                 <div class="warning-box">
                     <strong>🟡 Critical Sampling:</strong> $f_s = 2f_{max}$<br>
                     • Theoretical minimum (rarely used)<br>
                     • No aliasing but sensitive to noise<br>
                     • Requires perfect anti-aliasing filter
                 </div>
-                """, unsafe_allow_html=True)
+                """), unsafe_allow_html=True)
                 
-                st.markdown("""
-                <div class="success-box">
-                    <strong>🟢 Oversampling:</strong> $f_s > 2f_{max}$<br>
-                    • Perfect reconstruction possible<br>
-                    • Provides margin for practical filters<br>
-                    • More robust to noise and timing errors
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(textwrap.dedent("""
+                    <div class="success-box">
+                        <strong>🟢 Oversampling:</strong> $f_s > 2f_{max}$<br>
+                        • Perfect reconstruction possible<br>
+                        • Provides margin for practical filters<br>
+                        • More robust to noise and timing errors
+                    </div>
+                    """), unsafe_allow_html=True)
                 
                 st.markdown("---")
                 
@@ -821,40 +844,40 @@ def main():
     demo_col1, demo_col2 = st.columns(2)
     
     with demo_col1:
-        st.markdown("""
-        <div class="info-box">
-            <strong>🧪 Try These Experiments:</strong><br><br>
-            <strong>1. Aliasing Effect:</strong><br>
-            • Set frequencies to 5, 25, 45 Hz<br>
-            • Set sampling to 40 Hz<br>
-            • Watch 25 Hz and 45 Hz alias!<br><br>
-            
-            <strong>2. Perfect Reconstruction:</strong><br>
-            • Keep default frequencies (5, 15, 25 Hz)<br>
-            • Set sampling to 100+ Hz<br>
-            • Try different reconstruction methods<br><br>
-            
-            <strong>3. Critical Sampling:</strong><br>
-            • Set sampling = 2 × max frequency<br>
-            • Observe the edge case behavior
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(textwrap.dedent("""
+    <div class="info-box">
+        <strong>🧪 Try These Experiments:</strong><br><br>
+        <strong> Aliasing Effect:</strong><br>
+        • Set frequencies to 5, 25, 45 Hz<br>
+        • Set sampling to 40 Hz<br>
+        • Watch 25 Hz and 45 Hz alias!<br>
+<br>
+        <strong> Perfect Reconstruction:</strong><br>
+        • Keep default frequencies (5, 15, 25 Hz)<br>
+        • Set sampling to 100+ Hz<br>
+        • Try different reconstruction methods<br>
+   <br>     
+        <strong>3. Critical Sampling:</strong><br>
+        • Set sampling = 2 × max frequency<br>
+        • Observe the edge case behavior
+    </div>
+    """), unsafe_allow_html=True)
     
     with demo_col2:
-        st.markdown(f"""
+        st.markdown(textwrap.dedent(f"""
         <div class="warning-box">
             <strong>⚠️ Current Configuration Analysis:</strong><br><br>
             <strong>Your Settings:</strong><br>
             • Max frequency: <strong>{max_freq} Hz</strong><br>
             • Sampling rate: <strong>{sampling_rate} Hz</strong><br>
             • Nyquist rate: <strong>{nyquist_rate} Hz</strong><br>
-            • Ratio: <strong>{sampling_ratio:.2f}x</strong> Nyquist<br><br>
-            
+            • Ratio: <strong>{sampling_ratio:.2f}x</strong> Nyquist<br>
+            <br>            
             <strong>Status:</strong><br>
             {"✅ All frequencies are properly sampled!" if not aliased_freqs else 
              f"⚠️ {len(aliased_freqs)} frequency component(s) will be aliased!"}
         </div>
-        """, unsafe_allow_html=True)
+        """), unsafe_allow_html=True)
     
     # Key takeaways
     st.markdown("---")
@@ -863,31 +886,31 @@ def main():
     takeaway_cols = st.columns(3)
     
     with takeaway_cols[0]:
-        st.markdown("""
+        st.markdown(textwrap.dedent("""
         <div class="info-box">
             <strong>🎯 The Rule:</strong><br>
             Sample at <strong>at least 2× the highest frequency</strong> you want to capture. 
             In practice, use 2.5-4× for safety margin.
         </div>
-        """, unsafe_allow_html=True)
+        """), unsafe_allow_html=True)
     
     with takeaway_cols[1]:
-        st.markdown("""
+        st.markdown(textwrap.dedent("""
         <div class="warning-box">
             <strong>⚠️ The Danger:</strong><br>
             Undersample and high frequencies will <strong>masquerade as low frequencies</strong>. 
             This information loss is permanent!
         </div>
-        """, unsafe_allow_html=True)
+        """), unsafe_allow_html=True)
     
     with takeaway_cols[2]:
-        st.markdown("""
+        st.markdown(textwrap.dedent("""
         <div class="success-box">
             <strong>✅ The Solution:</strong><br>
             Use <strong>anti-aliasing filters</strong> before sampling to remove frequencies 
             above Nyquist limit.
         </div>
-        """, unsafe_allow_html=True)
+        """), unsafe_allow_html=True)
     
     # Footer with additional resources
     st.markdown("---")

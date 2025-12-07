@@ -9,7 +9,7 @@ use('Agg')
 from scipy import ndimage
 import cv2
 
-st.set_page_config(page_title="Fingerprint Scanning", page_icon="🔍", layout="wide")
+st.set_page_config(page_title="Audio Tuner", page_icon="🔍", layout="wide")
 
 def generate_fingerprint_pattern(size=200, noise_level=0.1):
     """Generate a simulated fingerprint pattern"""

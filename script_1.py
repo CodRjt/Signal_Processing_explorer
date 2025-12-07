@@ -83,7 +83,7 @@ def main():
         modules_info = {
             "Home": "Overview of all modules and signal processing concepts",
             "DTMF Checker": "Interactive dual-tone multi-frequency keypad simulation",
-            "Fingerprint Scanning": "Biometric signal processing visualization",
+            "DSP Workbench": "Audio signal processing and analysis tools",
             "Sampling Rate Demo": "Nyquist theorem and aliasing demonstration",
             "Human Eye Sampling": "Visual perception as temporal sampling analogy",
             "Real-life DSP": "Practical digital signal processing examples"
@@ -114,10 +114,9 @@ def main():
         """)
         
         st.markdown("""
-        #### 🔍 Fingerprint Scanning
-        - Biometric signal acquisition simulation
-        - Analog-to-digital conversion demonstration
-        - Quantization effects visualization
+        #### 🔍 Audio Tuner
+        - Audion Tuner simulation
+        - Filter demonstration
         """)
         
         st.markdown("""

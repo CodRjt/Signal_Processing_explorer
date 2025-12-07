@@ -85,6 +85,7 @@ st.markdown("""
     /* Info boxes */
     .info-box {
         background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        color: #1a237e;
         padding: 1rem;
         border-radius: 10px;
         border-left: 4px solid #2196f3;
