@@ -1,18 +1,23 @@
 # Interactive Signal Processing Explorer
+<img width="1860" height="976" alt="image" src="https://github.com/user-attachments/assets/47e3280c-9353-4804-884f-1f9edeba4c83" />
 
-**Master Digital Signal Processing through Play and Visualization**
+
+**Explore Digital Signal Processing through Play and Visualization**
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://dspexplorer.streamlit.app)
 
-A comprehensive Streamlit web application designed to help students, engineers, and enthusiasts explore complex DSP concepts—from the Nyquist Theorem to Image Fourier Analysis—through interactive, real-time demonstrations and gamified challenges.
+A comprehensive Streamlit web application designed to help students, engineers, and enthusiasts explore DSP concepts—from the Nyquist Theorem to Image Fourier Analysis—through interactive, real-time demonstrations and gamified challenges.
 
 ---
+## Vibe code alert
 
-## 🚀 Features & Modules
+Parts of the UI of this repo was vibe coded with Claude Sonnet 4.5.
+
+##  Features & Modules
 
 The application is organized into **6 interactive modules**, each targeting specific DSP concepts with hands-on exploration:
 
-### 1. 📞 DTMF Checker
+### 1. DTMF Checker
 **Concept:** Dual-Tone Multi-Frequency signaling (Phone dial tones)
 
 - **Interactive Virtual Keypad:** Control buttons 0–9, *, and #
@@ -20,7 +25,7 @@ The application is organized into **6 interactive modules**, each targeting spec
 - **FFT Analysis:** Visualize the specific low and high-frequency pairs for each digit
 - **Automated Tone Detection Algorithms:** Learn how phones decode your key presses
 
-### 2. 🔍 Audio DSP Workbench
+### 2. Audio DSP Workbench
 **Concept:** Waveform synthesis, noise injection, and filtering
 
 - **Rack-Mount Interface:** Generate Sine, Square, Sawtooth, or Triangle waves with adjustable frequency and amplitude
@@ -29,7 +34,7 @@ The application is organized into **6 interactive modules**, each targeting spec
 - **Tape Loop Library:** Record and save processed sounds to compare A/B snapshots side-by-side
 - **Real-Time Visualization:** Oscilloscope view (time domain) and Spectrum Analyzer (frequency domain)
 
-### 3. 📊 Sampling Rate Visualization
+### 3. Sampling Rate Visualization
 **Concept:** The Nyquist–Shannon Sampling Theorem & Aliasing
 
 - **Adjustable Sampling Rates:** Vary sampling frequency relative to signal frequency to explore Nyquist limits
@@ -37,7 +42,7 @@ The application is organized into **6 interactive modules**, each targeting spec
 - **Error Analysis:** View Mean Squared Error (MSE) and reconstruction artifacts in real time
 - **Visual Safety Indicators:** "Safe Oversampling" vs. "Aliasing Detected" alerts
 
-### 4. 👁️ Vision & Perception (The Human Sampler)
+### 4. Vision & Perception (The Human Sampler)
 **Concept:** Biological sampling, Temporal vs. Spatial Aliasing, and Chroma Subsampling
 
 - **Wagon Wheel Effect:** Interactive demo of temporal aliasing and stroboscopic effects
@@ -45,7 +50,7 @@ The application is organized into **6 interactive modules**, each targeting spec
 - **Custom Upload:** Test bandwidth compression on your own photos or use the built-in Astronaut test image
 - **Theory Deep Dive:** Rods vs. Cones, the Retinal Mosaic, and Moiré pattern formation
 
-### 5. 🕹️ The DSP Arcade (Real-Life Applications)
+### 5. The DSP Arcade (Real-Life Applications)
 **Concept:** Gamified learning of practical DSP tasks
 
 **Levels:**
@@ -53,7 +58,7 @@ The application is organized into **6 interactive modules**, each targeting spec
 - **Pixel Art Factory:** Understand spatial downsampling and color bit-depth reduction
 - **Ghost Signal Hunter:** Use Bandpass filters to isolate a hidden sine wave inside heavy noise
 
-### 6. 🛝 Image Analysis Playhouse
+### 6. Image Analysis Playhouse
 **Concept:** Advanced 2D Signal Processing
 
 - **Fourier Analysis:** View the 2D Magnitude Spectrum and phase of images
@@ -125,7 +130,7 @@ signal-processing-explorer/
 
 ---
 
-## 💡 User Tips
+## User Tips
 
 **Precision Control**  
 Click on any slider handle and use your **Left/Right Arrow Keys** on your keyboard to fine-tune values by 1 step for greater control.
@@ -141,7 +146,7 @@ For the best experience with real-time plots and audio, use a modern web browser
 
 ---
 
-## 📚 References & Theory
+## References & Theory
 
 This application implements foundational and advanced concepts from:
 
@@ -187,7 +192,7 @@ This application is ideal for:
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 **"ModuleNotFoundError" for streamlit or dependencies:**  
 Ensure you have activated the correct Python environment and run `pip install -r requirements.txt`.
